@@ -1,19 +1,40 @@
 import pickle
-import numpy
+import numpy as np
 import chessboard
 import park_martin
 import yaml
-numpy.set_printoptions(linewidth=300, suppress=True)
+np.set_printoptions(linewidth=300, suppress=True)
 from scipy.linalg import expm, inv
 from numpy import dot, eye
-import sys
+import sys, os
+import cv2 as cv
+from icecream import ic
 
-if sys.version_info.major > 2:
-    img_list = pickle.load(open('data/image_list.dump', 'rb'), encoding = 'latin1')
-    rob_pose_list = pickle.load(open('data/pose_list.dump', 'rb'), encoding = 'latin1')
-else:
-    img_list = pickle.load(open('data/image_list.dump', 'rb'))
-    rob_pose_list = pickle.load(open('data/pose_list.dump', 'rb'))
+def loadImages(datadir = '', ext='.png'):     
+    images = []
+    for f in os.listdir(datadir):
+        if f.endswith(ext):
+            frame = cv.imread(datadir+f)
+            gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            images.append(gray)
+    return images
+
+def loadNumbyArray(datadir = '', ext='.txt'):
+    txts = []
+    for f in os.listdir(datadir):
+        if f.endswith(ext):            
+            with open(datadir+'/' + f, 'r') as file: 
+                content = file.read()
+                content = content.replace('[', '').replace(']', '').strip()
+                data = np.fromstring(content, sep=' ')
+                array = data.reshape((4, 4))
+
+                txts.append(array)
+    return txts
+
+datadir = "./unpacked_data/"
+img_list = loadImages(datadir+"image_list.dump/")
+rob_pose_list = loadNumbyArray(datadir+"pose_list.dump/")
 
 corner_list = []
 obj_pose_list = []
@@ -64,7 +85,6 @@ for i in range(len(img_list)):
     rob = rob_pose_list[i]
     obj = obj_pose_list[i]
     tmp = dot(rob, dot(X, inv(obj)))
-    print(tmp)
 
 # Here I just pick one, but maybe some average can be used instead
 rob = rob_pose_list[0]
